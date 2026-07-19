@@ -38,4 +38,5 @@ Retriever
 
 ### Status
 
-RAG Service Implemented and Under Testing.
+Project Name: JobGenie Ai - Job search AI Agent
+Current Phase: Week 2 –RAG Service Implemented and Under Testing.
