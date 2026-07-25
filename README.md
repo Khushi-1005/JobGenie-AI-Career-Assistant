@@ -40,3 +40,7 @@ Retriever
 
 Project Name: JobGenie Ai - Job search AI Agent
 Current Phase: Week 2 –RAG Service Implemented and Under Testing.
+
+
+---
+Note: Some earlier commits in this repo were mislabeled "Week 3" during initial setup and debugging. This submission reflects Week 2 progress — RAG pipeline setup, PDF loading, chunking, Gemini embeddings, and Chroma vector store creation.
