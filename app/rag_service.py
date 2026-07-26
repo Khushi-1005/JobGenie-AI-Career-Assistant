@@ -53,6 +53,15 @@ class RAGServices:
         self.vector_store.add_documents(chunks)
 
         print("Embeddings created successfully!")
+    def query_resume(self, question: str, k: int = 3) -> str:
+        """
+        Search the resume's vector store for chunks relevant to `question`.
+        Returns the matched text joined together, ready to hand to an LLM.
+        """
+        results = self.vector_store.similarity_search(question, k=k)
+        if not results:
+            return "No relevant information found in the resume."
+        return "\n\n".join(doc.page_content for doc in results)
 
     def get_retriever(self):
 
