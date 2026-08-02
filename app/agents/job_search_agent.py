@@ -13,12 +13,12 @@ def job_search_tool(keyword: str, min_salary: int = 0) -> str:
     """Fetch job listings matching a keyword and minimum salary."""
     app_id = os.getenv("ADZUNA_APP_ID")
     app_key = os.getenv("ADZUNA_APP_KEY")
-    if not app_id or not api_key:
-        return "Error: missing ADZUNA_APP_ID or ADZUNA_API_KEY in .env"
+    if not app_id or not app_key:
+         return "Error: missing ADZUNA_APP_ID or ADZUNA_API_KEY in .env"
 
     url = "https://api.adzuna.com/v1/api/jobs/in/search/1"
     params = {
-        "app_id": app_id, "app_key": api_key, "what": keyword,
+        "app_id": app_id, "app_key": app_key, "what": keyword,
         "salary_min": min_salary, "results_per_page": 5,
         "content-type": "application/json",
     }

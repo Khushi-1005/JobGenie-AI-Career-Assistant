@@ -1,23 +1,30 @@
 # JobGenie – AI Agent Workflow
+## Week 4 Progress
 
 RAG-powered career assessment agent using LangChain, LangGraph, Google Gemini embeddings, ChromaDB, and Groq for AI-powered career assistance.
+This week: extended the workflow to a second agent - a Job Search Agent, that takes the career assessment as input and searches live
+job listings via the Adzuna API. The LangGraph workflow now routes between two agents in sequence.
 
 ## Objective
 
-Take the RAG pipeline from last week and turn it into something an actual AI agent can use — instead of manually querying the vector store, the LLM now decides on its own when it needs resume data, pulls it through a tool call, and writes up a full career assessment.
+Connect the Career Assessment Agent and Job Search Agent into a single end-to-end LangGraph workflow, so a resume goes in and a full career report plus matching live job listings come out — with no manual steps in between.
+
 
 ## Features Completed
 
-- `query_resume()` added to the RAG service for semantic search over the resume vector store
+- `query_resume()` on the RAG service for semantic search over the resume vector store
 - Career Assessment Agent — an LLM (Groq / Llama 3.3) bound to a `fetch_resume_data` tool
-- LangGraph workflow connecting an agent node and a tool node, with conditional routing based on whether the LLM requests a tool call
-- Tested end-to-end: the agent correctly asks for resume data, gets it back from ChromaDB, and produces a grounded career report
+- Job Search Agent — an LLM bound to a `job_search_tool` that calls the live Adzuna jobs API
+- LangGraph workflow routing career assessment straight into job search once the assessment is complete, instead of ending early
+- Job search agent uses the career report already in the conversation history to pick a relevant search keyword
+- Tested end-to-end: resume data → career assessment → live Adzuna job search → final combined report with real job listings
 
 ## Workflow
 
-''' User request -> Agent Node -> needs resume data?
-yes -> fetch_resume_data tool -> back to Agent Node
-no -> Final Career Assessment Report -> END '''
+User request
+-> Career Assessment Agent -> needs resume data? yes -> fetch_resume_data tool -> back to Career Assessment Agent
+-> no -> hands off to Job Search Agent-> Job Search Agent-> needs job listings? yes -> job_search_tool (Adzuna) -> back to Job Search Agent
+-> no -> Final combined report -> END
 
 ## Tech Stack
 
@@ -29,6 +36,7 @@ no -> Final Career Assessment Report -> END '''
 | Embeddings | Google Gemini |
 | Vector Store | ChromaDB |
 | PDF Parsing | PyPDFLoader |
+| Job Search | Adzuna API |
 
 ## Setup & Run
 
@@ -49,15 +57,20 @@ Run the agent workflow:
 '''
 ## Sample Output
 
-![Career assessment report output](screenshots/career_report_output.png)
+![Career assessment report output](screenshots/career_report_output2.png)
 
 
 ## Notes
 
-This week, we learned that an AI agent doesn't execute tools directly—it requests tool calls, and the application executes them and returns the results.We also debugged an indentation issue where a method was accidentally nested inside another, preventing it from being called correctly. This helped me better understand both agent workflows and Python class structure.
+This week's main lesson: connecting two agents in one LangGraph workflow just means pointing one agent's "__end__" route to the next agent's node instead of straight to END.The shared conversation history is what lets the second agent see what the first one already found. Also spent time chasing a small variable-name typo (`api_key` vs `app_key`) that produced a confusing traceback several layers deep in a library — a good reminder that Python's own "Did you mean" suggestions are worth reading carefully.
 
 ## Project Status
 
 **Project Name:** JobGenie AI – Job Search AI Agent
-**Current Phase:** Week 3 — Career Assessment Agent and LangGraph workflow implemented and tested end-to-end.
+**Current Phase:** Week 4 — Career Assessment Agent and Job Search Agent connected into a single multi-agent LangGraph workflow, tested end-to-end.
 
+## Next Steps
+
+- Add error handling so a failed tool call (e.g. Adzuna API timeout) doesn't crash the whole workflow
+- Add a visual diagram of the LangGraph graph itself
+- Add basic automated tests

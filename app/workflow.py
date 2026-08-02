@@ -4,17 +4,12 @@ import os
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from typing import TypedDict, Annotated, Literal
-
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage
-
 from app.agents.career_assessment_agent import CareerAssessmentAgent
 from app.agents.job_search_agent import JobSearchAgent
 
-class AgentState(TypedDict):
-    messages: Annotated[list, add_messages]
-    career_report: str
 
 def route_assessment(state: AgentState) -> Literal["assessment_tools", "__end__"]:
     messages = state["messages"]
@@ -27,14 +22,20 @@ def route_assessment(state: AgentState) -> Literal["assessment_tools", "__end__"
     print(f"\n\nCAREER REPORT: {state['career_report']}\n\n")
     return "__end__"
 
+class AgentState(TypedDict):
+    messages: Annotated[list, add_messages]
+    career_report: str
+    job_results: str
+
 def route_job_search(state: AgentState) -> Literal["job_search_tools", "__end__"]:
     messages = state["messages"]
     last_message = messages[-1]
 
-    if hasattr(last_message, "tool_calls"):
+    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
         return "job_search_tools"
 
     return "__end__"
+
 
 class ExecuteWorkflow:
     def __init__(self):
@@ -54,22 +55,21 @@ class ExecuteWorkflow:
             route_assessment,
             {
                 "assessment_tools": "assessment_tools",
-                "__end__": END
+                "__end__": "job_search"
             }
         )
 
         workflow_builder.add_edge("assessment_tools", "career_assessment")
 
-        # workflow_builder.add_conditional_edges(
-        #     "job_search",
-        #     route_job_search,
-        #     {
-        #         "job_search_tools": "job_search_tools",
-        #         "__end__": END
-        #     }
-        # )
+        workflow_builder.add_conditional_edges(
+            "job_search",
+            route_job_search,
+            {
+                "job_search_tools": "job_search_tools",
+                "__end__": END            }
+        )
 
-        # workflow_builder.add_edge("job_search_tools", "job_search")
+        workflow_builder.add_edge("job_search_tools", "job_search")
 
         self.workflow = workflow_builder.compile()
 
