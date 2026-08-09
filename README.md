@@ -1,30 +1,36 @@
-# JobGenie – AI Agent Workflow
-## Week 4 Progress
+# JobGenie – AI Agent Workflow (Week 5)
 
-RAG-powered career assessment agent using LangChain, LangGraph, Google Gemini embeddings, ChromaDB, and Groq for AI-powered career assistance.
-This week: extended the workflow to a second agent - a Job Search Agent, that takes the career assessment as input and searches live
-job listings via the Adzuna API. The LangGraph workflow now routes between two agents in sequence.
+Indian job market specialization built on top of the multi-agent LangGraph workflow from Week 4 (career assessment agent + job search agent, RAG-powered resume analysis, live Adzuna job search).
 
 ## Objective
 
-Connect the Career Assessment Agent and Job Search Agent into a single end-to-end LangGraph workflow, so a resume goes in and a full career report plus matching live job listings come out — with no manual steps in between.
+Specialize the job search agent for the Indian job market — LPA salary formatting, city-based filtering, and metro vs. tier-2 classification — and expose the whole system through a FastAPI layer with multiple endpoints.
 
+## Track Chosen
+
+Indian Job Search Specialist (Track A, Option A1)
 
 ## Features Completed
 
-- `query_resume()` on the RAG service for semantic search over the resume vector store
-- Career Assessment Agent — an LLM (Groq / Llama 3.3) bound to a `fetch_resume_data` tool
-- Job Search Agent — an LLM bound to a `job_search_tool` that calls the live Adzuna jobs API
-- LangGraph workflow routing career assessment straight into job search once the assessment is complete, instead of ending early
-- Job search agent uses the career report already in the conversation history to pick a relevant search keyword
-- Tested end-to-end: resume data → career assessment → live Adzuna job search → final combined report with real job listings
+- Job search now uses **LPA (Lakhs Per Annum)** salary format instead of raw numbers
+- **Location-based filtering** by Indian city (e.g. Bangalore, Pune, Mumbai)
+- Results tagged as **Metro vs Tier-2** city
+- **FastAPI application** (`app/api.py`) with three endpoints:
+  - `POST /assess-and-search` — runs the full career assessment + job search agent workflow
+  - `POST /resume/query` — direct semantic search over the resume vector store
+  - `POST /jobs/search` — direct call to the Adzuna job search tool with Indian-market parameters
+- Interactive Swagger docs auto-generated at `/docs`, grouped by tag (Health, Workflow, Resume, Jobs)
+- All endpoints wrapped in try/except, returning clean HTTP 500 errors instead of crashing
+- Verified end-to-end via both the CLI workflow and the live API
 
 ## Workflow
 
 User request
--> Career Assessment Agent -> needs resume data? yes -> fetch_resume_data tool -> back to Career Assessment Agent
--> no -> hands off to Job Search Agent-> Job Search Agent-> needs job listings? yes -> job_search_tool (Adzuna) -> back to Job Search Agent
--> no -> Final combined report -> END
+-> Career Assessment Agent -> resume data -> career report
+-> Job Search Agent -> job_search_tool (keyword, min_salary_lpa, location)
+-> results tagged Metro / Tier-2, salary shown in LPA
+-> Final combined report -> END
+
 
 ## Tech Stack
 
@@ -37,40 +43,62 @@ User request
 | Vector Store | ChromaDB |
 | PDF Parsing | PyPDFLoader |
 | Job Search | Adzuna API |
+| API Layer | FastAPI + Uvicorn |
 
 ## Setup & Run
 
-'''python -m venv .venv
+python -m venv .venv
 .venv\Scripts\activate
-pip install -r requirements.txt'''
+pip install -r requirements.txt
+
 
 Create a `.env` file in the project root:
 
-'''GEMINI_API_KEY=your-key-here
+GEMINI_API_KEY=your-key-here
 GROQ_API_KEY=your-key-here
 ADZUNA_APP_ID=your-key-here
-ADZUNA_APP_KEY=your-key-here'''
+ADZUNA_APP_KEY=your-key-here
 
-Run the agent workflow:
 
-'''python -m app.workflow
-'''
+Run the agent workflow directly:
+
+python -m app.workflow
+
+
+Or run the API:
+
+uvicorn app.api:app --reload
+
+
+Then open `http://127.0.0.1:8000/docs` for interactive API docs.
+
+Example request to `/jobs/search`:
+
+{
+"keyword": "Data Scientist",
+"min_salary_lpa": 10,
+"location": "Bangalore"
+}
+
+
 ## Sample Output
 
-![Career assessment report output](screenshots/career_report_output2.png)
-
+![Job search API response with LPA salaries and metro/tier-2 tagging](screenshots/job_search_lpa_output.png)
 
 ## Notes
 
-This week's main lesson: connecting two agents in one LangGraph workflow just means pointing one agent's "__end__" route to the next agent's node instead of straight to END.The shared conversation history is what lets the second agent see what the first one already found. Also spent time chasing a small variable-name typo (`api_key` vs `app_key`) that produced a confusing traceback several layers deep in a library — a good reminder that Python's own "Did you mean" suggestions are worth reading carefully.
+Adapting the job search tool for the Indian market mostly meant translating between formats — converting LPA to a plain annual number before calling the Adzuna API, and tagging results as metro or tier-2 based on a simple city-name check. It was a good reminder that "specialization" doesn't always mean new architecture, sometimes it just means formatting and filtering data in a way that actually matches how the target users think about it.
+
+Breaking the API into three focused endpoints (resume search alone, job search alone, full pipeline) instead of one big endpoint also made testing much easier — when something failed, it was obvious which layer broke instead of guessing inside one large function.
 
 ## Project Status
 
 **Project Name:** JobGenie AI – Job Search AI Agent
-**Current Phase:** Week 4 — Career Assessment Agent and Job Search Agent connected into a single multi-agent LangGraph workflow, tested end-to-end.
+**Current Phase:** Week 5 — Domain specialization complete: Indian job market features (LPA salary, metro/tier-2 tagging, location filtering) integrated into both the CLI workflow and a multi-endpoint FastAPI layer, tested end-to-end.
 
 ## Next Steps
 
-- Add error handling so a failed tool call (e.g. Adzuna API timeout) doesn't crash the whole workflow
-- Add a visual diagram of the LangGraph graph itself
+- Add notice period or  work-from-home filtering
+- Add SQLite storage for saved job search preferences
 - Add basic automated tests
+- Add a visual diagram of the LangGraph graph itself
