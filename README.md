@@ -1,36 +1,49 @@
-# JobGenie – AI Agent Workflow (Week 5)
+# JobGenie AI – Intelligent Career & Job Search Agent (Week 6)
 
-Indian job market specialization built on top of the multi-agent LangGraph workflow from Week 4 (career assessment agent + job search agent, RAG-powered resume analysis, live Adzuna job search).
+An AI-powered career intelligence platform that combines resume-based career assessment, live Indian job search, specialized job filtering, SQLite search history, and an interactive Streamlit interface.
+
+Week 6 extends the Week 5 Indian Job Search Specialist by adding notice-period detection, work-from-home detection, persistent search history, and a professional web dashboard.
 
 ## Objective
 
-Specialize the job search agent for the Indian job market — LPA salary formatting, city-based filtering, and metro vs. tier-2 classification — and expose the whole system through a FastAPI layer with multiple endpoints.
+Build a practical career assistant specialized for the Indian job market that can:
+
+- Analyze a resume using a RAG-powered career assessment workflow
+- Search live Indian job listings using the Adzuna API
+- Convert salary requirements into LPA (Lakhs Per Annum)
+- Filter jobs by location and minimum salary
+- Detect notice-period requirements from job descriptions
+- Detect work-from-home / remote opportunities
+- Store job search history using SQLite
+- Provide an interactive Streamlit web interface
 
 ## Track Chosen
 
-Indian Job Search Specialist (Track A, Option A1)
+**Indian Job Search Specialist (Track A, Option A1)**
 
 ## Features Completed
 
-- Job search now uses **LPA (Lakhs Per Annum)** salary format instead of raw numbers
-- **Location-based filtering** by Indian city (e.g. Bangalore, Pune, Mumbai)
-- Results tagged as **Metro vs Tier-2** city
-- **FastAPI application** (`app/api.py`) with three endpoints:
-  - `POST /assess-and-search` — runs the full career assessment + job search agent workflow
-  - `POST /resume/query` — direct semantic search over the resume vector store
-  - `POST /jobs/search` — direct call to the Adzuna job search tool with Indian-market parameters
-- Interactive Swagger docs auto-generated at `/docs`, grouped by tag (Health, Workflow, Resume, Jobs)
-- All endpoints wrapped in try/except, returning clean HTTP 500 errors instead of crashing
-- Verified end-to-end via both the CLI workflow and the live API
+- Job search tool now detects and flags notice period requirements (30/60/90 days) mentioned in job descriptions, compared against the candidate's own notice period
+- Work-from-home mentions are detected and flagged in results
+- SQLite `search_history` table stores every search (keyword, salary, location, results, timestamp)
+- Streamlit UI with two tabs:
+  - **Full Career Assessment** — runs the complete agent workflow
+  - **Quick Job Search** — direct search with live results and recent search history
+- Verified end-to-end across CLI, API, and UI
 
-## Workflow
+## System Workflow
 
-User request
--> Career Assessment Agent -> resume data -> career report
--> Job Search Agent -> job_search_tool (keyword, min_salary_lpa, location)
--> results tagged Metro / Tier-2, salary shown in LPA
--> Final combined report -> END
-
+User
+-> Streamlit UI
+-> Career Assessment / Smart Job Search
+-> Career Assessment Agent
+-> RAG Resume Retrieval
+-> Job Search Agent
+-> Adzuna API
+-> Notice Period + WFH Detection
+-> Job Results
+-> SQLite Search History
+-> Results displayed in Streamlit
 
 ## Tech Stack
 
@@ -44,6 +57,8 @@ User request
 | PDF Parsing | PyPDFLoader |
 | Job Search | Adzuna API |
 | API Layer | FastAPI + Uvicorn |
+| Database | SQLite |
+| UI | Streamlit |
 
 ## Setup & Run
 
@@ -65,40 +80,42 @@ Run the agent workflow directly:
 python -m app.workflow
 
 
-Or run the API:
+Run the API:
 
 uvicorn app.api:app --reload
 
+Then open `http://127.0.0.1:8000/docs`.
 
-Then open `http://127.0.0.1:8000/docs` for interactive API docs.
+Run the interactive UI:
 
-Example request to `/jobs/search`:
+streamlit run app_ui.py
 
-{
-"keyword": "Data Scientist",
-"min_salary_lpa": 10,
-"location": "Bangalore"
-}
-
+Then open `http://localhost:8501`.
 
 ## Sample Output
 
-![Job search API response with LPA salaries and metro/tier-2 tagging](screenshots/job_search_lpa_output.png)
+![Streamlit UI job search results](screenshots/streamlit_ui_output1.png)
+![Streamlit UI job search results](screenshots/streamlit_ui_output2.png)
+![Streamlit UI job search results](screenshots/streamlit_ui_output3.png)
 
-## Notes
 
-Adapting the job search tool for the Indian market mostly meant translating between formats — converting LPA to a plain annual number before calling the Adzuna API, and tagging results as metro or tier-2 based on a simple city-name check. It was a good reminder that "specialization" doesn't always mean new architecture, sometimes it just means formatting and filtering data in a way that actually matches how the target users think about it.
 
-Breaking the API into three focused endpoints (resume search alone, job search alone, full pipeline) instead of one big endpoint also made testing much easier — when something failed, it was obvious which layer broke instead of guessing inside one large function.
+The job search tool was enhanced with notice-period and work-from-home detection to make job recommendations more relevant to individual candidates. Job descriptions are analyzed for common notice-period and remote-work indicators, and the results are clearly tagged for easier interpretation.
+
+SQLite was introduced to persist job search history locally. Each search stores the keyword, minimum salary requirement, location, results, and timestamp, allowing users to review their recent searches through the Streamlit interface.
+
+A Streamlit dashboard was also added as the main user interface. It provides separate sections for AI career assessment, smart job search, and search history, making the existing multi-agent workflow accessible through an interactive web application.
+
+The project now combines RAG-based resume analysis, agentic workflows, live job APIs, database persistence, and an interactive frontend into a single end-to-end career assistant.
 
 ## Project Status
 
 **Project Name:** JobGenie AI – Job Search AI Agent
-**Current Phase:** Week 5 — Domain specialization complete: Indian job market features (LPA salary, metro/tier-2 tagging, location filtering) integrated into both the CLI workflow and a multi-endpoint FastAPI layer, tested end-to-end.
+**Current Phase:** Week 6 — Specialized career features integrated and tested (Week 6 checkpoints met): Notice period, WFH filtering, SQLite search history, and an interactive Streamlit UI, all verified end-to-end alongside the existing agent workflow and API.
 
 ## Next Steps
 
-- Add notice period or  work-from-home filtering
-- Add SQLite storage for saved job search preferences
+- Add resume upload directly in the UI instead of a hardcoded file path
 - Add basic automated tests
-- Add a visual diagram of the LangGraph graph itself
+- Explore deployment (Streamlit Cloud) for a live, shareable demo
+- Add company culture and benefits analysis to round out the Option A1 checklist

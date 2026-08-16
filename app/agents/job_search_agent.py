@@ -21,6 +21,7 @@ def job_search_tool(
     min_salary_lpa: float = 0,
     location: str = "any",
     remote_ok: bool = True,
+    max_notice_period_days: int = 90,
 ) -> str:
     """Fetch job listings for the Indian job market.
 
@@ -29,6 +30,8 @@ def job_search_tool(
     min_salary_lpa -> Minimum salary in Lakhs Per Annum (e.g. 12 for 12 LPA)
     location -> A city name (e.g. "Bangalore", "Pune") or "any"
     remote_ok -> Whether remote/work-from-home roles should be included
+    max_notice_period_days -> Candidate's notice period in days (30/60/90).
+        Listings that explicitly require a longer notice period are filtered out.
     """
     app_id = os.getenv("ADZUNA_APP_ID")
     app_key = os.getenv("ADZUNA_APP_KEY")
@@ -37,10 +40,11 @@ def job_search_tool(
         return "Error: missing ADZUNA_APP_ID or ADZUNA_APP_KEY in .env"
 
     url = "https://api.adzuna.com/v1/api/jobs/in/search/1"
+    search_terms = keyword if remote_ok else f"{keyword} -remote"
     params = {
         "app_id": app_id,
         "app_key": app_key,
-        "what": keyword,
+        "what": search_terms,
         "salary_min": lpa_to_annual(min_salary_lpa),
         "results_per_page": 8,
         "content-type": "application/json",
@@ -61,11 +65,27 @@ def job_search_tool(
         title = job.get("title", "Unknown title")
         company = job.get("company", {}).get("display_name", "Unknown company")
         job_location = job.get("location", {}).get("display_name", "Unknown location")
+        description = (job.get("description") or "").lower()
+
         salary_min = job.get("salary_min")
         salary_display = f"{round(salary_min / 100000, 1)} LPA" if salary_min else "Not listed"
+
         is_metro = any(city in job_location.lower() for city in INDIAN_METRO_CITIES)
         tag = "Metro" if is_metro else "Tier-2/Other"
-        lines.append(f"- {title} at {company} ({job_location}, {tag}) | Salary: {salary_display}")
+
+        notice_flag = ""
+        for days in (30, 60, 90):
+            if f"{days} day" in description or f"{days}-day" in description:
+                if days > max_notice_period_days:
+                    notice_flag = f" | Notice: {days} days (exceeds your {max_notice_period_days})"
+                else:
+                    notice_flag = f" | Notice: {days} days (OK)"
+
+        wfh_flag = " | WFH mentioned" if "work from home" in description or "remote" in description else ""
+
+        lines.append(
+            f"- {title} at {company} ({job_location}, {tag}) | Salary: {salary_display}{notice_flag}{wfh_flag}"
+        )
 
     return "\n".join(lines)
 
