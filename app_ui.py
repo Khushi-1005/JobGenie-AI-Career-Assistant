@@ -1,6 +1,11 @@
 import streamlit as st
-from langchain_core.messages import HumanMessage
+import os
 
+for key in ["GEMINI_API_KEY", "GROQ_API_KEY", "ADZUNA_APP_ID", "ADZUNA_APP_KEY"]:
+    if key in st.secrets:
+        os.environ[key] = st.secrets[key]
+        
+from langchain_core.messages import HumanMessage
 from app.workflow import ExecuteWorkflow
 from app.agents.job_search_agent import job_search_tool
 from app.database import save_search, get_recent_searches
