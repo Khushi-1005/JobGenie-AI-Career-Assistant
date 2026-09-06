@@ -29,7 +29,7 @@ class CareerAssessmentAgent:
     def __init__(self):
         self.tools = [fetch_resume_data]
         self.tools_map = {t.name: t for t in self.tools}
-        self.llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0).bind_tools(self.tools)
+        self.llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0).bind_tools(self.tools)
 
     def agent_node(self, state):
         messages = state["messages"]
