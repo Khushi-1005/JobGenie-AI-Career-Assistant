@@ -8,13 +8,6 @@ from app.rag_service import RAGServices
 
 load_dotenv()
 
-_rag = RAGServices()
-
-
-@tool
-def fetch_resume_data(question: str = "Summarize the candidate's education, experience, skills, and projects") -> str:
-    """Fetch relevant resume data (education, experience, skills, projects) to build a career assessment."""
-    return _rag.query_resume(question)
 
 
 CAREER_ASSESSMENT_SYSTEM_PROMPT = """You are a Career Assessment AI Agent.
@@ -26,10 +19,21 @@ Only use information returned by the tool - do not invent details."""
 
 
 class CareerAssessmentAgent:
-    def __init__(self):
-        self.tools = [fetch_resume_data]
+    def __init__(self, rag_service: RAGServices):
+        self.rag = rag_service
+        self.tools = [self._make_fetch_tool()]
         self.tools_map = {t.name: t for t in self.tools}
         self.llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0).bind_tools(self.tools)
+
+    def _make_fetch_tool(self):
+        rag = self.rag
+
+        @tool
+        def fetch_resume_data(question: str = "Summarize the candidate's education, experience, skills, and projects") -> str:
+            """Fetch relevant resume data (education, experience, skills, projects) to build a career assessment."""
+            return rag.query_resume(question)
+
+        return fetch_resume_data
 
     def agent_node(self, state):
         messages = state["messages"]

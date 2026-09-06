@@ -1,9 +1,13 @@
 import streamlit as st
 import os
 
-for key in ["GEMINI_API_KEY", "GROQ_API_KEY", "ADZUNA_APP_ID", "ADZUNA_APP_KEY"]:
-    if key in st.secrets:
-        os.environ[key] = st.secrets[key]
+try:
+    for key in ["GEMINI_API_KEY", "GROQ_API_KEY", "ADZUNA_APP_ID", "ADZUNA_APP_KEY"]:
+        if key in st.secrets:
+            os.environ[key] = st.secrets[key]
+except Exception:
+    # No secrets.toml locally — fall back to .env (already loaded via load_dotenv elsewhere)
+    pass
         
 from langchain_core.messages import HumanMessage
 from app.workflow import ExecuteWorkflow
@@ -207,9 +211,16 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+RESUME_OPTIONS = {
+    "My Resume": ("assets/Khushi_Nichang_Resume.pdf", "my_resume"),
+    "Sample Resume (provided by instructor)": ("assets/AI_Developer_Resume.pdf", "sample_resume"),
+}
+
+resume_choice = st.selectbox("Choose a resume to analyze", list(RESUME_OPTIONS.keys()))
+
 @st.cache_resource
-def get_workflow():
-    return ExecuteWorkflow()
+def get_workflow(resume_path: str, collection_name: str):
+    return ExecuteWorkflow(resume_path, collection_name)
 
 searches = get_recent_searches(100)
 total_searches = len(searches)
@@ -337,7 +348,8 @@ with tab1:
     ):
         with st.spinner("🤖 AI agents are analyzing your profile..."):
             try:
-                workflow = get_workflow()
+                resume_path, collection_name = RESUME_OPTIONS[resume_choice]
+                workflow = get_workflow(resume_path, collection_name)
 
                 input_state = {
                     "messages": [

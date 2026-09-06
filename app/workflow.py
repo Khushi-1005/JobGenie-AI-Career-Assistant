@@ -9,6 +9,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage
 from app.agents.career_assessment_agent import CareerAssessmentAgent
 from app.agents.job_search_agent import JobSearchAgent
+from app.rag_service import RAGServices
 
 
 def route_assessment(state: AgentState) -> Literal["assessment_tools", "__end__"]:
@@ -38,8 +39,12 @@ def route_job_search(state: AgentState) -> Literal["job_search_tools", "__end__"
 
 
 class ExecuteWorkflow:
-    def __init__(self):
-        assessment_agent = CareerAssessmentAgent()
+  
+    def __init__(self, resume_path: str, collection_name: str = "resume_collection"):
+        rag_service = RAGServices(collection_name=collection_name)
+        rag_service.process_and_create_embeddings(resume_path)
+
+        assessment_agent = CareerAssessmentAgent(rag_service)
         job_search_agent = JobSearchAgent()
 
         workflow_builder = StateGraph(AgentState) # Workflow data will be stored and passed around AgentState
@@ -82,23 +87,12 @@ class ExecuteWorkflow:
         return result
 
 if __name__ == "__main__":
-    workflow = ExecuteWorkflow()
+    workflow = ExecuteWorkflow(
+        resume_path=r"D:\KHUSHII\AgenticAI\job_search_agent\assets\AI_Developer_Resume.pdf",
+        collection_name="sample_resume"
+    )
     result = workflow.run_workflow()
 
-    input = {
-        "messages": [HumanMessage(content="Assess my profile and generate an evaluation report")]
-    }
-
     print("\n\n--------------------------OUTPUT STARTS HERE--------------\n\n")
-    # output = workflow.invoke(input)
-
     print(result["messages"][-1].content)
-    
     print("\n\n--------------------------OUTPUT ENDS HERE-----------------\n\n")
-
-
-    # print("\n\n-------------------------START DEBUGGING HERE---------------\n\n")
-
-    # print(output)
-
-    # print("\n\n-------------------------END DEBUGGING HERE---------------\n\n")
